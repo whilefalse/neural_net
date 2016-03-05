@@ -5,7 +5,7 @@ DLLS=(
   'lib/TaskParallelLibrary.1.0.2856.0/lib/Net35/System.Threading.dll'
   )
 
-CMD="fsharpc network.fs neural_net.fs --out:bin/neural_net.exe --noframework --optimize --debug --standalone ${DLLS[@]/lib/-r:lib}"
+CMD="fsharpc network.fs load_data.fs neural_net.fs --out:bin/neural_net.exe --noframework --optimize --debug --standalone ${DLLS[@]/lib/-r:lib}"
 echo $CMD
 $CMD
 
