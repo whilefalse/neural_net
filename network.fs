@@ -6,20 +6,12 @@ module Network =
 
   let sigmoid z = 1.0 / (1.0 + exp -z)
 
-  type Layer = {
-    weights: Matrix<float>
-    biases: Matrix<float>
-  }
-
-  type Batch = {
-    inputs: Matrix<float>
-    expected_outputs: Matrix<float>
-  }
-
-  type DataPoint = {
-    input_vector: Vector<float>
-    expected_vector: Vector<float>
-  }
+  type Layer = { weights: Matrix<float>; biases: Matrix<float> }
+  type Batch = { inputMatrix: Matrix<float>; expectedMatrix: Matrix<float> }
+  type DataPoint =
+    { inputVector: Vector<float>; expectedVector: Vector<float> }
+    member this.inputMatrix = this.inputVector.ToColumnMatrix()
+    member this.expectedMatrix = this.expectedVector.ToColumnMatrix()
 
   type Network(layer_sizes: int list) =
     let num_layers = layer_sizes.Length
@@ -39,26 +31,33 @@ module Network =
         |> Matrix.map sigmoid
       Seq.fold process_layer initial_inputs layers
 
-  //  let gradient_descent training_data test_data num_epochs batch_size learning_rate =
-  //    let run_batch batch_initial_layers batch =
-  //      // Do gradient descent, back propogration and...
-  //      // Return new layers
-  //
-  //    let run_epoch epoch_initial_layers _ =
-  //      let batches : Batch list =
-  //        // TODO: We need to make training_data a Tuple of (inputs, expected_outputs)
-  //        // Where inputs and expected_outputs are matrices with each column a given data point.
-  //        // So in this case inputs would be a 748x50,000 matrix (748 input nodes, 50,000 data points)
-  //        //                 and expected_outputs would be a 10x50,000 matrix (10 output nodes, 50,000 data points)
-  //        // Then we need to:
-  //        //   1. Create a random Permutation to apply
-  //        //   2. Apply it to both matrices to shuffle them
-  //        //   3. Partition both matrices column wise by the batch_size, to get N
-  //        //      Batch records (N=number of batches).
-  //
-  //      let trained_layers = Seq.fold run_batch epoch_initial_layers batches
-  //      // TODO: evaluate trained_layers test_data
-  //      trained_layers
-  //
-  //    let trained_layers =
-  //      Seq.fold run_epoch random_layers seq { 1 .. num_epochs }
+    member this.evaluate(inputs) =
+      feed_forward random_layers inputs
+
+    member this.gradientDescent(training_data, test_data, numEpochs, batchSize, learning_rate) =
+      let run_batch batch_initial_layers batch =
+        batch_initial_layers
+        // Do gradient descent, back propogration and...
+        // Return new layers
+
+      let run_epoch epoch_initial_layers i =
+        printfn "Epoch %i" i
+        let makeBatch dataPoints =
+          let inputVectors = dataPoints |> Seq.map (fun x -> x.inputVector)
+          let expectedVectors = dataPoints |> Seq.map (fun x -> x.expectedVector)
+          {
+            inputMatrix = SparseMatrix.ofColumnSeq(inputVectors)
+            expectedMatrix = SparseMatrix.ofColumnSeq(expectedVectors)
+          }
+
+        let batches =
+          // TODO: randomize training data before chunking it
+          training_data
+          |> Seq.chunkBySize batchSize
+          |> Seq.map makeBatch
+
+        // TODO: Evaluate after each epoch
+        Seq.fold run_batch epoch_initial_layers batches
+
+      let epochs = seq { 1 .. numEpochs }
+      Seq.fold run_epoch random_layers epochs
