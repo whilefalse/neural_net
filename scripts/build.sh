@@ -1,5 +1,5 @@
 DLLS=(
-  'lib/FSharp.Core.3.1.2.5/lib/net40/FSharp.Core.dll'
+  'lib/FSharp.Core.4.0.0.1/lib/net40/FSharp.Core.dll'
   'lib/MathNet.Numerics.3.11.0/lib/net40/MathNet.Numerics.dll'
   'lib/MathNet.Numerics.FSharp.3.11.0/lib/net40/MathNet.Numerics.FSharp.dll'
   'lib/TaskParallelLibrary.1.0.2856.0/lib/Net35/System.Threading.dll'
