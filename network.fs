@@ -51,8 +51,8 @@ module Network =
           }
 
         let batches =
-          // TODO: randomize training data before chunking it
           training_data
+          |> Shuffle.shuffleList
           |> Seq.chunkBySize batchSize
           |> Seq.map makeBatch
 

@@ -12,12 +12,6 @@ let main args =
   let net = Network(layer_sizes)
   printfn "Created network: %A" net
 
-  printfn "Guessing first data point..."
-  let first_data_point = Seq.head data
-  let output_vector = net.evaluate(first_data_point.inputMatrix)
-  printfn "Expected output vector: %A" first_data_point.expectedMatrix
-  printfn "Actual output vector: %A" output_vector
-
   // Now do the learning
   let epochs = 30
   let batchSize = 10
@@ -27,11 +21,11 @@ let main args =
   printfn "Batch size: %i" batchSize
   printfn "Learning rate: %f" learningRate
 
-  let train = data |> Seq.take 50000
-  let test = data |> Seq.skip 60000 |> Seq.take 10000
+  let train = data |> Seq.take 50000 |> Seq.toList
+  let test = data |> Seq.skip 60000 |> Seq.take 10000 |> Seq.toList
 
-  printfn "Training data: %i items" (Seq.length train)
-  printfn "Training data: %i items" (Seq.length test)
+  printfn "Training data: %i items" (List.length train)
+  printfn "Training data: %i items" (List.length test)
 
   let learnedLayers =
     net.gradientDescent(
