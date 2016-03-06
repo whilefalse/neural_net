@@ -14,18 +14,9 @@ let main args =
   printfn "Created network: %A" net
 
   printfn "Guessing first 2 data points..."
-  let inputMatrix =
-    data
-    |> Seq.take 2
-    |> Seq.map (fun x -> x.inputVector)
-    |> SparseMatrix.ofColumnSeq
-  let expectedMatrix =
-    data
-    |> Seq.take 2
-    |> Seq.map (fun x -> x.expectedVector)
-    |> SparseMatrix.ofColumnSeq
-  let outputMatrix = net.evaluate(inputMatrix)
-  printfn "Expected output matrix: %A" expectedMatrix
+  let batch = { data = data |> Seq.take 2 |> Seq.toList }
+  let outputMatrix = net.evaluate(batch.inputMatrix)
+  printfn "Expected output matrix: %A" batch.expectedMatrix
   printfn "Actual output matrix: %A" outputMatrix
 
   // Now do the learning

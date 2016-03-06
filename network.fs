@@ -1,22 +1,26 @@
 namespace FSharp.NeuralNet
 
 open MathNet.Numerics.LinearAlgebra
+open System.Linq
 
 module Network =
 
   let sigmoid z = 1.0 / (1.0 + exp -z)
 
   type Layer =
-    { weights: Matrix<float>; biases: Matrix<float> }
-    member this.length = Matrix.rowCount this.biases
+    { weights: Matrix<float>; biases: Vector<float> }
+    member this.length = Vector.length this.biases
     member this.batchBiases(batchLength) =
-      let columnVectors =
-        seq { 0 .. batchLength - 1}
-        |> Seq.map (fun _ -> this.biases.Column(0))
-      SparseMatrix.ofColumnSeq columnVectors
-  type Batch = { inputMatrix: Matrix<float>; expectedMatrix: Matrix<float> }
+      SparseMatrix.ofColumnSeq(Enumerable.Repeat(this.biases, batchLength))
+
   type DataPoint =
     { inputVector: Vector<float>; expectedVector: Vector<float> }
+
+  type Batch =
+    { data: DataPoint list }
+    member private this.matrixOf f = this.data |> Seq.map f |> SparseMatrix.ofColumnSeq
+    member this.inputMatrix = this.matrixOf (fun x -> x.inputVector)
+    member this.expectedMatrix = this.matrixOf (fun x -> x.expectedVector)
 
   type BatchLayerActivations =
     // Each column represents a data point, and each row a node in this layer.
@@ -34,8 +38,8 @@ module Network =
 
     let random_layers =
       let make_layer (last_layer_size, layer_size) = {
-        weights = DenseMatrix.randomStandard<float> last_layer_size layer_size
-        biases = DenseMatrix.randomStandard<float> layer_size 1
+        weights = DenseMatrix.randomStandard<float> layer_size last_layer_size
+        biases = DenseVector.randomStandard<float> layer_size
       }
       let skip_last = Seq.take (num_layers - 1) layer_sizes
       let skip_first = Seq.skip 1 layer_sizes
@@ -52,7 +56,7 @@ module Network =
         let thisLayer = layers.Item(i-1)
         let previousActivations = activations.[i-1]
         let batchBiases = thisLayer.batchBiases(batchSize)
-        let weightedInputs = (Matrix.transpose thisLayer.weights) * previousActivations.activations + batchBiases
+        let weightedInputs = thisLayer.weights * previousActivations.activations + batchBiases
         Array.set activations i (BatchLayerActivations.withWeightedInputs(weightedInputs))
         activations
       Seq.fold processLayer initialActivations (seq { 1 .. List.length layers })
@@ -61,8 +65,7 @@ module Network =
       feedForwardBatch random_layers inputMatrix
 
     member this.gradientDescent(training_data, test_data, numEpochs, batchSize, learning_rate) =
-      let run_batch layers (batch, i) =
-        printfn "Batch %i" i
+      let run_batch layers (batch : Batch, i) =
         let batchLayerActivations = feedForwardBatch layers batch.inputMatrix
         layers
         // TODO:
@@ -81,19 +84,12 @@ module Network =
 
       let run_epoch epoch_initial_layers i =
         printfn "Epoch %i" i
-        let makeBatch dataPoints =
-          let inputVectors = dataPoints |> Seq.map (fun x -> x.inputVector)
-          let expectedVectors = dataPoints |> Seq.map (fun x -> x.expectedVector)
-          {
-            inputMatrix = SparseMatrix.ofColumnSeq(inputVectors)
-            expectedMatrix = SparseMatrix.ofColumnSeq(expectedVectors)
-          }
 
         let batches =
           training_data
           |> Shuffle.shuffleList
           |> Seq.chunkBySize batchSize
-          |> Seq.map makeBatch
+          |> Seq.map (fun x -> { data = Seq.toList x })
           |> Seq.toList
 
         printfn "%i batches" (List.length batches)
