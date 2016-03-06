@@ -1,5 +1,6 @@
 open FSharp.NeuralNet.Network
 open FSharp.NeuralNet.LoadData
+open MathNet.Numerics.LinearAlgebra
 
 [<EntryPoint>]
 let main args =
@@ -11,6 +12,21 @@ let main args =
   let layer_sizes = [784;30;10]
   let net = Network(layer_sizes)
   printfn "Created network: %A" net
+
+  printfn "Guessing first 2 data points..."
+  let inputMatrix =
+    data
+    |> Seq.take 2
+    |> Seq.map (fun x -> x.inputVector)
+    |> SparseMatrix.ofColumnSeq
+  let expectedMatrix =
+    data
+    |> Seq.take 2
+    |> Seq.map (fun x -> x.expectedVector)
+    |> SparseMatrix.ofColumnSeq
+  let outputMatrix = net.evaluate(inputMatrix)
+  printfn "Expected output matrix: %A" expectedMatrix
+  printfn "Actual output matrix: %A" outputMatrix
 
   // Now do the learning
   let epochs = 30
