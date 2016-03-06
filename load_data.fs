@@ -18,5 +18,5 @@ module LoadData =
     let expectedVector = makeExpectedVector expectedResult
     { inputVector = inputVector; expectedVector = expectedVector }
 
-  let load_data path =
+  let loadData path =
     System.IO.File.ReadLines(path) |> Seq.map parseLine

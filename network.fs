@@ -12,6 +12,9 @@ module Network =
     member this.length = Vector.length this.biases
     member this.batchBiases(batchLength) =
       DenseMatrix.ofColumnSeq(Enumerable.Repeat(this.biases, batchLength))
+    static member rand(size, prevSize) =
+      { weights = DenseMatrix.randomStandard<float> size prevSize
+        biases = DenseVector.randomStandard<float> size }
 
   type DataPoint =
     { inputVector: Vector<float>; expectedVector: Vector<float> }
@@ -33,17 +36,13 @@ module Network =
       let m = DenseMatrix.zero rows columns
       { weightedInputs = m; activations = m }
 
-  type Network(layer_sizes: int list) =
-    let num_layers = layer_sizes.Length
+  type Network(layerSizes: int list) =
+    let numLayers = layerSizes.Length
 
-    let random_layers =
-      let make_layer (last_layer_size, layer_size) = {
-        weights = DenseMatrix.randomStandard<float> layer_size last_layer_size
-        biases = DenseVector.randomStandard<float> layer_size
-      }
-      let skip_last = Seq.take (num_layers - 1) layer_sizes
-      let skip_first = Seq.skip 1 layer_sizes
-      Seq.zip skip_last skip_first |> Seq.map make_layer |> Seq.toList
+    let randomLayers =
+      let skipLast = Seq.take (numLayers - 1) layerSizes
+      let skipFirst = Seq.skip 1 layerSizes
+      Seq.zip skipLast skipFirst |> Seq.map Layer.rand |> Seq.toList
 
     let feedForwardBatch layers (inputMatrix : Matrix<double>) =
       let batchSize = Matrix.columnCount inputMatrix
@@ -59,13 +58,14 @@ module Network =
         let weightedInputs = thisLayer.weights * previousActivations.activations + batchBiases
         Array.set activations i (BatchLayerActivations.withWeightedInputs(weightedInputs))
         activations
-      Seq.fold processLayer initialActivations (seq { 1 .. List.length layers })
+      Seq.fold processLayer initialActivations [ 1 .. List.length layers ]
 
     member this.evaluate(inputMatrix) =
-      feedForwardBatch random_layers inputMatrix
+      feedForwardBatch randomLayers inputMatrix
 
-    member this.gradientDescent(training_data, test_data, numEpochs, batchSize, learning_rate) =
-      let run_batch layers (batch : Batch, i) =
+    member this.gradientDescent(train, test, epochs, batchSize, learningRate) =
+
+      let runBatch layers (batch : Batch, i) =
         let batchLayerActivations = feedForwardBatch layers batch.inputMatrix
         layers
         // TODO:
@@ -82,11 +82,11 @@ module Network =
         // 4. Then to get the error in weights... For each layer do (activations_l-1 * error_l).
         // Result is a matrix of size (lastLayerNodes, layerNodes) and is the SUM of the errors in the relevant weight, over all data points
 
-      let run_epoch epoch_initial_layers i =
+      let runEpoch initialLayers i =
         printfn "Epoch %i" i
 
         let batches =
-          training_data
+          train
           |> Shuffle.shuffleList
           |> Seq.chunkBySize batchSize
           |> Seq.map (fun x -> { data = Seq.toList x })
@@ -95,7 +95,6 @@ module Network =
         printfn "%i batches" (List.length batches)
 
         // TODO: Evaluate after each epoch
-        Seq.fold run_batch epoch_initial_layers (Seq.mapi (fun i x -> x,i) batches)
+        Seq.fold runBatch initialLayers (Seq.mapi (fun i x -> x,i) batches)
 
-      let epochs = seq { 1 .. numEpochs }
-      Seq.fold run_epoch random_layers epochs
+      Seq.fold runEpoch randomLayers [ 1 .. epochs ]
