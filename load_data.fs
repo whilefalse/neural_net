@@ -7,14 +7,14 @@ module LoadData =
 
   let parseLine (line:string) =
     let makeExpectedVector result =
-      SparseVector.init 10 (fun x -> if x = result then 1.0 else 0.0)
+      DenseVector.init 10 (fun x -> if x = result then 1.0 else 0.0)
 
     let split = line.Split(':')
     let expectedResult = int split.[1]
     let inputVector =
       split.[0].Split(',')
       |> Seq.map float
-      |> SparseVector.ofSeq
+      |> DenseVector.ofSeq
     let expectedVector = makeExpectedVector expectedResult
     { inputVector = inputVector; expectedVector = expectedVector }
 

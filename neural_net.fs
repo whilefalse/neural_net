@@ -20,7 +20,7 @@ let main args =
   printfn "Actual output matrix: %A" outputMatrix
 
   // Now do the learning
-  let epochs = 30
+  let epochs = 1
   let batchSize = 10
   let learningRate = 3.0
   printfn "Running the neural network..."
@@ -34,6 +34,8 @@ let main args =
   printfn "Training data: %i items" (List.length train)
   printfn "Training data: %i items" (List.length test)
 
+  let s = new System.Diagnostics.Stopwatch()
+  s.Start()
   let learnedLayers =
     net.gradientDescent(
       train,
@@ -41,4 +43,5 @@ let main args =
       epochs,
       batchSize,
       learningRate)
+  printfn "Epoch took %A" s.Elapsed
   0

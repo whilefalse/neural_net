@@ -11,14 +11,14 @@ module Network =
     { weights: Matrix<float>; biases: Vector<float> }
     member this.length = Vector.length this.biases
     member this.batchBiases(batchLength) =
-      SparseMatrix.ofColumnSeq(Enumerable.Repeat(this.biases, batchLength))
+      DenseMatrix.ofColumnSeq(Enumerable.Repeat(this.biases, batchLength))
 
   type DataPoint =
     { inputVector: Vector<float>; expectedVector: Vector<float> }
 
   type Batch =
     { data: DataPoint list }
-    member private this.matrixOf f = this.data |> Seq.map f |> SparseMatrix.ofColumnSeq
+    member private this.matrixOf f = this.data |> Seq.map f |> DenseMatrix.ofColumnSeq
     member this.inputMatrix = this.matrixOf (fun x -> x.inputVector)
     member this.expectedMatrix = this.matrixOf (fun x -> x.expectedVector)
 
@@ -30,7 +30,7 @@ module Network =
     static member withWeightedInputs(w) =
       { weightedInputs = w; activations = Matrix.map sigmoid w }
     static member zeros(rows, columns) =
-      let m = SparseMatrix.zero rows columns
+      let m = DenseMatrix.zero rows columns
       { weightedInputs = m; activations = m }
 
   type Network(layer_sizes: int list) =
