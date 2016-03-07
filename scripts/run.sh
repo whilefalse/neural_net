@@ -1,1 +1,1 @@
-mono bin/neural_net.exe
+mono bin/Debug/neural_net.exe
