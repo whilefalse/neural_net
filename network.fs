@@ -25,13 +25,13 @@ module Network =
     member this.inputMatrix = this.matrixOf (fun x -> x.inputVector)
     member this.expectedMatrix = this.matrixOf (fun x -> x.expectedVector)
 
-  type BatchLayerActivations =
+  type Activations =
     // Each column represents a data point, and each row a node in this layer.
     { weightedInputs: Matrix<float>; activations: Matrix<float> }
-    static member inputLayer(activations) =
-      { weightedInputs = activations; activations = activations }
-    static member withWeightedInputs(w) =
-      { weightedInputs = w; activations = Matrix.map sigmoid w }
+    static member inputLayer(a) =
+      { weightedInputs = a; activations = a }
+    static member withWeightedInputs(z) =
+      { weightedInputs = z; activations = Matrix.map sigmoid z }
     static member zeros(rows, columns) =
       let m = DenseMatrix.zero rows columns
       { weightedInputs = m; activations = m }
@@ -46,17 +46,17 @@ module Network =
 
     let feedForwardBatch layers (inputMatrix : Matrix<double>) =
       let batchSize = Matrix.columnCount inputMatrix
-      let inputActivations = BatchLayerActivations.inputLayer(inputMatrix)
+      let inputActivations = Activations.inputLayer(inputMatrix)
       let layerActivations =
         layers
-        |> List.map (fun (x:Layer) -> BatchLayerActivations.zeros(x.length, batchSize))
+        |> List.map (fun (x:Layer) -> Activations.zeros(x.length, batchSize))
       let initialActivations = inputActivations :: layerActivations |> List.toArray
-      let processLayer (activations : BatchLayerActivations []) i =
+      let processLayer (activations : Activations []) i =
         let thisLayer = layers.Item(i-1)
         let previousActivations = activations.[i-1]
         let batchBiases = thisLayer.batchBiases(batchSize)
         let weightedInputs = thisLayer.weights * previousActivations.activations + batchBiases
-        Array.set activations i (BatchLayerActivations.withWeightedInputs(weightedInputs))
+        Array.set activations i (Activations.withWeightedInputs(weightedInputs))
         activations
       Seq.fold processLayer initialActivations [ 1 .. List.length layers ]
 
