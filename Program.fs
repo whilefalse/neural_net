@@ -5,7 +5,7 @@ open MathNet.Numerics.LinearAlgebra
 [<EntryPoint>]
 let main args =
   printfn "Loading data..."
-  let data = loadData "./mnist.txt" |> Seq.toList
+  let data = loadData "./data/mnist.txt" |> Seq.toList
   printfn "Data loaded."
 
   printfn "Generating network..."

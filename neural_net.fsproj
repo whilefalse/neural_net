@@ -60,7 +60,8 @@
     <Compile Include="Program.fs" />
     <Content Include="packages.config" />
     <Content Include="data\mnist.txt">
-      <Link>mnist.txt</Link>
+      <Link>data\mnist.txt</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
