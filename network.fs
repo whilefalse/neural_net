@@ -59,8 +59,18 @@ module Network =
       { biases = oldLayer.biases - biasErrors.RowSums().Multiply(factor)
         weights = oldLayer.weights - weightErrors.Multiply(factor) }
 
-    member this.evaluate(inputMatrix) =
-      feedForwardBatch randomLayers inputMatrix
+    let getPredictionMatrix resultMatrix =
+        Matrix.mapCols (fun _ col ->
+            let max = col.MaximumIndex()
+            DenseVector.init 10 (fun x -> if x = max then 1.0 else 0.0)) resultMatrix
+
+    member this.evaluate(testData, layers) =
+      let evaluateAll = { data = testData }
+      let evaluation = List.head (feedForwardBatch layers evaluateAll.inputMatrix)
+      let predictions = getPredictionMatrix evaluation.activations
+      int (Matrix.sum (evaluateAll.expectedMatrix.* predictions))
+
+    member this.evaluate(testData) = this.evaluate(testData, randomLayers)
 
     member this.gradientDescent(train, test, epochs, batchSize, learningRate) =
 
@@ -93,8 +103,9 @@ module Network =
 
         printfn "%i batches" batches.Length
 
-        // TODO: Evaluate after each epoch
         let newLayers = Seq.fold (runBatch (updateLayer (learningRate / float batchSize))) initialLayers batches |> Seq.toList
+
+        printfn "%i/10000" (this.evaluate(test, newLayers))
         printfn "Took %A" sw.Elapsed
         newLayers
 
