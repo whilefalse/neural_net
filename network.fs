@@ -59,21 +59,10 @@ module Network =
       { biases = oldLayer.biases - biasErrors.RowSums().Multiply(factor)
         weights = oldLayer.weights - weightErrors.Multiply(factor) }
 
-    let getPredictionMatrix resultMatrix =
-        Matrix.mapCols (fun _ col ->
-            let max = col.MaximumIndex()
-            DenseVector.init 10 (fun x -> if x = max then 1.0 else 0.0)) resultMatrix
-
-    member this.evaluate(testData, layers) =
-      let evaluateAll = { data = testData }
-      let evaluation = List.head (feedForwardBatch layers evaluateAll.inputMatrix)
-      let predictions = getPredictionMatrix evaluation.activations
-      int (Matrix.sum (evaluateAll.expectedMatrix.* predictions))
-
+    member this.evaluate(testData : Batch, layers) = List.head (feedForwardBatch layers testData.inputMatrix)
     member this.evaluate(testData) = this.evaluate(testData, randomLayers)
 
-    member this.gradientDescent(train, test, epochs, batchSize, learningRate) =
-
+    member this.gradientDescent(train, test, epochs, batchSize, learningRate, evaluateFn) =
       let runBatch makeLayer layers (batch : Batch) =
         let activations = feedForwardBatch layers batch.inputMatrix
         let outputActivations = List.head activations
@@ -90,10 +79,12 @@ module Network =
         Seq.zip3 layers biasErrors weightErrors |> Seq.map makeLayer |> Seq.toList
 
       let runEpoch initialLayers i =
-        printfn "Epoch %i" i
+        // Start stopwatch
+        printf "Epoch %i" i
         let sw = System.Diagnostics.Stopwatch()
         sw.Start()
 
+        // Get batches
         let batches =
           train
           |> Shuffle.shuffleList
@@ -101,12 +92,15 @@ module Network =
           |> Seq.map (fun x -> { data = Seq.toList x })
           |> Seq.toList
 
-        printfn "%i batches" batches.Length
-
+        // Train the NN
         let newLayers = Seq.fold (runBatch (updateLayer (learningRate / float batchSize))) initialLayers batches |> Seq.toList
+        printf " - Took %A" sw.Elapsed
 
-        printfn "%i/10000" (this.evaluate(test, newLayers))
-        printfn "Took %A" sw.Elapsed
+        // Evaluate the new layers
+        let testBatch = { data = test }
+        evaluateFn testBatch.expectedMatrix (this.evaluate(testBatch, newLayers))
+
+        // Return the new layers
         newLayers
 
       Seq.fold runEpoch randomLayers [ 1 .. epochs ]
