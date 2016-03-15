@@ -5,8 +5,8 @@ open System.Drawing
 open System.Drawing.Imaging
 open System.IO
 
-let numberRepresentedByVector (vector : Vector<float>) =
-    vector.MaximumIndex()
+let numberRepresentedByVector vector =
+    Vector.maxIndex vector
 
 let getPredictionMatrix resultMatrix =
         Matrix.mapCols (fun _ col ->
@@ -49,7 +49,7 @@ let main args =
   printfn "Created network: %A" net
 
   // Now do the learning
-  let epochs = 1
+  let epochs = 5
   let batchSize = 10
   let learningRate = 3.0
   printfn "Running the neural network..."
@@ -63,9 +63,10 @@ let main args =
   printfn "Training data: %i items" (List.length train)
   printfn "Training data: %i items" (List.length test)
 
+  let randomLayers = net.randomLayers
   printf "Epoch 0"
   let testBatch = { data = test }
-  evaluate testBatch.expectedMatrix (net.evaluate(testBatch))
+  evaluate testBatch.expectedMatrix (net.evaluate(testBatch, randomLayers))
 
   let learnedLayers =
     net.gradientDescent(
@@ -74,6 +75,7 @@ let main args =
       epochs,
       batchSize,
       learningRate,
+      randomLayers,
       evaluate)
 
   // Output the images

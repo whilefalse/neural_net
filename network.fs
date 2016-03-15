@@ -4,7 +4,6 @@ open MathNet.Numerics.LinearAlgebra
 open System.Linq
 
 module Network =
-
   let sigmoid z = 1.0 / (1.0 + exp -z)
   let sigmoid' z = sigmoid(z) * (1.0 - sigmoid(z))
   let feedForward w a b = w * a + b
@@ -19,8 +18,7 @@ module Network =
       { weights = DenseMatrix.randomStandard<float> size prevSize
         biases = DenseVector.randomStandard<float> size }
 
-  type DataPoint =
-    { inputVector: Vector<float>; expectedVector: Vector<float> }
+  type DataPoint = { inputVector: Vector<float>; expectedVector: Vector<float> }
 
   type Batch =
     { data: DataPoint list }
@@ -39,42 +37,42 @@ module Network =
   type Network(layerSizes: int list) =
     let numLayers = layerSizes.Length
 
-    let randomLayers =
+    let feedForwardLayer batchSize activations thisLayer =
+      let zs = feedForward thisLayer.weights (List.head activations).activations (thisLayer.batchBiases(batchSize))
+      Activations.withWeightedInputs(zs) :: activations
+
+    let feedForwardBatch layers inputMatrix =
+      let f = feedForwardLayer (Matrix.columnCount inputMatrix)
+      List.fold f [Activations.inputLayer(inputMatrix)] layers
+
+    let backPropLayer (nextLayer, thisActivations) errors =
+      backPropErrors (nextLayer.weights.Transpose() * List.head errors) thisActivations.weightedInputs :: errors
+
+    let calcWeightError (prevActivations, thisErrors) = thisErrors * prevActivations.activations.Transpose()
+
+    let updateLayer factor (oldLayer, biasErrors, weightErrors) =
+      { biases = oldLayer.biases - factor * Matrix.sumRows biasErrors
+        weights = oldLayer.weights - factor * weightErrors }
+
+    member this.randomLayers =
       let skipLast = Seq.take (numLayers - 1) layerSizes
       let skipFirst = Seq.skip 1 layerSizes
       Seq.zip skipLast skipFirst |> Seq.map LayerConfig.rand |> Seq.toList
 
-    let feedForwardLayer batchSize (activations: Activations list) (thisLayer: LayerConfig)  =
-        let zs = feedForward thisLayer.weights (List.head activations).activations (thisLayer.batchBiases(batchSize))
-        Activations.withWeightedInputs(zs) :: activations
-
-    let feedForwardBatch (layers: LayerConfig list) inputMatrix =
-      let f = feedForwardLayer (Matrix.columnCount inputMatrix)
-      List.fold f [Activations.inputLayer(inputMatrix)] layers
-
-    let backPropLayer (errors: Matrix<float> list) (nextLayer: LayerConfig, thisActivations: Activations) =
-      backPropErrors (nextLayer.weights.Transpose() * List.head errors) thisActivations.weightedInputs :: errors
-
-    let updateLayer factor (oldLayer : LayerConfig, biasErrors : Matrix<float>, weightErrors: Matrix<float>) =
-      { biases = oldLayer.biases - biasErrors.RowSums().Multiply(factor)
-        weights = oldLayer.weights - weightErrors.Multiply(factor) }
-
     member this.evaluate(testData : Batch, layers) = List.head (feedForwardBatch layers testData.inputMatrix)
-    member this.evaluate(testData) = this.evaluate(testData, randomLayers)
 
-    member this.gradientDescent(train, test, epochs, batchSize, learningRate, evaluateFn) =
+    member this.gradientDescent(train, test, epochs, batchSize, learningRate, initialLayers, evaluateFn) =
       let runBatch makeLayer layers (batch : Batch) =
         let activations = feedForwardBatch layers batch.inputMatrix
         let outputActivations = List.head activations
         let layerErrors = [backPropErrors (outputActivations.activations - batch.expectedMatrix) outputActivations.weightedInputs]
 
-        let allButLastActivations = activations |> List.tail |> List.rev
-        let middleActivations = allButLastActivations |> List.tail
-        let nextLayers = layers |> List.tail
+        let prevActivations = activations |> List.tail |> List.rev
+        let currActivations = List.tail prevActivations
+        let nextLayers = List.tail layers
 
-        let biasErrors = Seq.fold backPropLayer layerErrors (Seq.zip (List.rev nextLayers) (List.rev middleActivations))
-        let calcWeightError (prevActivations, thisErrors) = thisErrors * prevActivations.activations.Transpose()
-        let weightErrors = Seq.map calcWeightError (Seq.zip allButLastActivations biasErrors)
+        let biasErrors = Seq.foldBack backPropLayer (Seq.zip nextLayers currActivations) layerErrors
+        let weightErrors = Seq.map calcWeightError (Seq.zip prevActivations biasErrors)
 
         Seq.zip3 layers biasErrors weightErrors |> Seq.map makeLayer |> Seq.toList
 
@@ -103,4 +101,4 @@ module Network =
         // Return the new layers
         newLayers
 
-      Seq.fold runEpoch randomLayers [ 1 .. epochs ]
+      Seq.fold runEpoch initialLayers [ 1 .. epochs ]
