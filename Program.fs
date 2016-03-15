@@ -23,7 +23,7 @@ let writeImage (vector:Vector<float>) (path:string) =
     for x in [ 0 .. 27 ] do
         for y in [ 0 .. 27 ] do
             let pixelVal = 255 - int (vector.[28 * y + x] * 255.0)
-            b.SetPixel(x, y, Color.FromArgb(55, pixelVal, pixelVal, pixelVal))
+            b.SetPixel(x, y, Color.FromArgb(255, pixelVal, pixelVal, pixelVal))
     b.Save(path, ImageFormat.Png)
 
 let writeResult i (inputVector, expected, actual) =
@@ -53,6 +53,7 @@ let main args =
   let batchSize = 10
   let learningRate = 3.0
   printfn "Running the neural network..."
+  printfn "Layer sizes: %A" layerSizes
   printfn "Epochs: %i" epochs
   printfn "Batch size: %i" batchSize
   printfn "Learning rate: %f" learningRate
