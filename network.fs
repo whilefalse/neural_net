@@ -15,7 +15,7 @@ module Network =
     member this.batchBiases(batchLength) =
       DenseMatrix.ofColumnSeq(Enumerable.Repeat(this.biases, batchLength))
     static member rand(prevSize, size) =
-      { weights = DenseMatrix.randomStandard<float> size prevSize
+      { weights = DenseMatrix.randomStandard<float> size prevSize / sqrt (float prevSize)
         biases = DenseVector.randomStandard<float> size }
 
   type DataPoint = { inputVector: Vector<float>; expectedVector: Vector<float> }
