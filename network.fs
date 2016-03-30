@@ -2,10 +2,10 @@ namespace FSharp.NeuralNet
 
 open MathNet.Numerics.LinearAlgebra
 open System.Linq
+open Costs
 
 module Network =
-  let sigmoid z = 1.0 / (1.0 + exp -z)
-  let sigmoid' z = sigmoid(z) * (1.0 - sigmoid(z))
+  
   let feedForward w a b = w * a + b
   let backPropErrors delta zs = delta.* (Matrix.map sigmoid' zs)
 
@@ -34,7 +34,7 @@ module Network =
     static member withWeightedInputs(z) =
       { weightedInputs = z; activations = Matrix.map sigmoid z }
 
-  type Network(layerSizes: int list) =
+  type Network(layerSizes: int list, costDeltaFn) =
     let numLayers = layerSizes.Length
 
     let feedForwardLayer batchSize activations thisLayer =
@@ -65,7 +65,7 @@ module Network =
       let runBatch makeLayer layers (batch : Batch) =
         let activations = feedForwardBatch layers batch.inputMatrix
         let outputActivations = List.head activations
-        let layerErrors = [backPropErrors (outputActivations.activations - batch.expectedMatrix) outputActivations.weightedInputs]
+        let layerErrors = [costDeltaFn outputActivations.weightedInputs outputActivations.activations batch.expectedMatrix]
 
         let prevActivations = activations |> List.tail |> List.rev
         let currActivations = List.tail prevActivations

@@ -1,5 +1,6 @@
 open FSharp.NeuralNet.Network
 open FSharp.NeuralNet.LoadData
+open FSharp.NeuralNet.Costs
 open MathNet.Numerics.LinearAlgebra
 open System.Drawing
 open System.Drawing.Imaging
@@ -45,7 +46,7 @@ let main args =
 
   printfn "Generating network..."
   let layerSizes = [784;30;10]
-  let net = Network(layerSizes)
+  let net = Network(layerSizes, crossEntropy)
   printfn "Created network: %A" net
 
   // Now do the learning
