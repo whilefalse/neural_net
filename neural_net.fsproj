@@ -55,6 +55,7 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="Shuffle.fs" />
+    <Compile Include="Costs.fs" />
     <Compile Include="Network.fs" />
     <Compile Include="LoadData.fs" />
     <Compile Include="Program.fs" />

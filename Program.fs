@@ -45,15 +45,15 @@ let main args =
   printfn "Data loaded."
 
   printfn "Generating network..."
-  let layerSizes = [784;30;10]
+  let layerSizes = [784;100;10]
   let net = Network(layerSizes, crossEntropy)
   printfn "Created network: %A" net
 
   // Now do the learning
-  let epochs = 5
+  let epochs = 60
   let batchSize = 10
-  let learningRate = 3.0
-  let l2Reg = 0.5
+  let learningRate = 0.1
+  let l2Reg = 5.0
   printfn "Running the neural network..."
   printfn "Layer sizes: %A" layerSizes
   printfn "Epochs: %i" epochs
