@@ -53,11 +53,13 @@ let main args =
   let epochs = 5
   let batchSize = 10
   let learningRate = 3.0
+  let l2Reg = 0.5
   printfn "Running the neural network..."
   printfn "Layer sizes: %A" layerSizes
   printfn "Epochs: %i" epochs
   printfn "Batch size: %i" batchSize
   printfn "Learning rate: %f" learningRate
+  printfn "L2 regularization parameter: %f" l2Reg
 
   let train = data |> Seq.take 50000 |> Seq.toList
   let test = data |> Seq.skip 60000 |> Seq.take 10000 |> Seq.toList
@@ -77,6 +79,7 @@ let main args =
       epochs,
       batchSize,
       learningRate,
+      l2Reg,
       randomLayers,
       evaluate)
 

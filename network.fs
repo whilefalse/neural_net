@@ -50,9 +50,9 @@ module Network =
 
     let calcWeightError (prevActivations, thisErrors) = thisErrors * prevActivations.activations.Transpose()
 
-    let updateLayer factor (oldLayer, biasErrors, weightErrors) =
-      { biases = oldLayer.biases - factor * Matrix.sumRows biasErrors
-        weights = oldLayer.weights - factor * weightErrors }
+    let updateLayer learningRate l2Reg batchSize trainSize (oldLayer, biasErrors, (weightErrors: Matrix<float>)) =
+      { biases = oldLayer.biases -  Matrix.sumRows biasErrors * (learningRate/float batchSize)
+        weights = oldLayer.weights * (1.0-learningRate*(l2Reg/float trainSize)) -  weightErrors * (learningRate/float batchSize) }
 
     member this.randomLayers =
       let skipLast = Seq.take (numLayers - 1) layerSizes
@@ -61,7 +61,7 @@ module Network =
 
     member this.evaluate(testData : Batch, layers) = List.head (feedForwardBatch layers testData.inputMatrix)
 
-    member this.gradientDescent(train, test, epochs, batchSize, learningRate, initialLayers, evaluateFn) =
+    member this.gradientDescent(train, test, epochs, batchSize, learningRate, l2Reg, initialLayers, evaluateFn) =
       let runBatch makeLayer layers (batch : Batch) =
         let activations = feedForwardBatch layers batch.inputMatrix
         let outputActivations = List.head activations
@@ -91,7 +91,9 @@ module Network =
           |> Seq.toList
 
         // Train the NN
-        let newLayers = Seq.fold (runBatch (updateLayer (learningRate / float batchSize))) initialLayers batches |> Seq.toList
+        let updateFunc = updateLayer learningRate l2Reg batchSize (List.length train)
+        let batchFunc = runBatch updateFunc
+        let newLayers = Seq.fold batchFunc initialLayers batches |> Seq.toList
         printf " - Took %A" sw.Elapsed
 
         // Evaluate the new layers
